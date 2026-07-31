@@ -26,6 +26,6 @@ public class PlayerManager : MonoBehaviour
     private void FixedUpdate()
     {
         //This handles everything that's inside the player, including Movement and jumping
-        plrLocomotion.HandleAllMovement();
+        plrLocomotion.HandleAllMovement(inputManager.jumpInput);
     }
 }

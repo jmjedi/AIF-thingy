@@ -9,6 +9,7 @@ public class InputManager : MonoBehaviour
 
     //All Stick/Input directions
     public Vector2 movementInput;
+    public bool jumpInput;
     public float verticalInput;
     public float horizontalInput;
 
@@ -25,6 +26,8 @@ public class InputManager : MonoBehaviour
             //Otherwise, we should not be moving at this time
             //This can prevent the inputs from saving while we are playing
             playerControls.Gameplay.Movement.canceled += i => movementInput = Vector2.zero;
+            playerControls.Gameplay.Jump.started += i => jumpInput = true;
+            playerControls.Gameplay.Jump.canceled += i => jumpInput = false;
 
         }
         //Enalbe the player controls

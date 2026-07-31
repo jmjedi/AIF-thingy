@@ -56,5 +56,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "AIF-thingy.sln"
+    "dotnet.defaultSolution": "AIF-thingy.sln",
+    "dotnet.preferCSharpExtension": true
 }

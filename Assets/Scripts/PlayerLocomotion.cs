@@ -11,7 +11,6 @@ public class PlayerLocomotion : MonoBehaviour
     Vector3 moveDir;
     Transform cameraObject;
     Rigidbody plrRigidbody;
-    float fallAcceleration = 0;
 
     //Set player values that will be used in game
     //This can be changed within the unity workspace to simplify where it is
@@ -19,15 +18,16 @@ public class PlayerLocomotion : MonoBehaviour
     [Header("Movement Speeds")]
     public float movementSpd = 7;
     public float rotationSpd = 15;
-    public float jumpSize = 10;
+    public float jumpSize = 8;
 
     [Header("Falling Based")]
-    public float fallSpd = 8;
+    public float gravityScale = 2;
     public float rayCastSize = 1f;
     public LayerMask groundLayer;
 
     [Header("Flags")]
     public bool isGrounded;
+    public string State = "Small";
 
     private void Awake()
     {
@@ -37,13 +37,14 @@ public class PlayerLocomotion : MonoBehaviour
         cameraObject = Camera.main.transform;
     }
 
-    public void HandleAllMovement()
+    public void HandleAllMovement(bool jumpInput)
     {
         //Handle EVERYTHING that's inside the player
         //This gets handled inside the player manager
         HandleMovement();
         HandleRotation();
         HandleFloorCollision();
+        HandleJump(jumpInput);
     }
 
     private void HandleMovement()
@@ -59,18 +60,28 @@ public class PlayerLocomotion : MonoBehaviour
 
         //Set the player's velocity to the move direction
         Vector3 movementVel = moveDir;
+        movementVel.y = plrRigidbody.velocity.y;
         plrRigidbody.velocity = movementVel;
-
+    
         //How this script works is it gets where the player is looking
         //and moves the player's position based on where the camera looks
         //at the object.
     }
 
-    private void HandleJump()
+    private void HandleJump(bool input)
     {
+        //We should be able to only jump when we are on the ground
         if (isGrounded)
         {
-            plrRigidbody.AddForce(transform.up * jumpSize, ForceMode.Impulse);
+            //Check if we are pressing the jump input
+            if (input)
+                //Push the player upwards
+                plrRigidbody.AddForce(transform.up * jumpSize, ForceMode.Impulse);
+        }
+
+        if (!input && plrRigidbody.velocity.y > 0)
+        {
+            plrRigidbody.velocity = new Vector3(plrRigidbody.velocity.x, plrRigidbody.velocity.y * 0.5f, plrRigidbody.velocity.z);
         }
     }
 
@@ -100,29 +111,21 @@ public class PlayerLocomotion : MonoBehaviour
         transform.rotation = playerRotation;
         
         //This script functions as where the player looks at. The player has a
-        //box to show which directiont he player is currently looking at, making
+        //box to show which direction the player is currently looking at, making
         //it more realistic for where the player is facing.
     }
-
-    
 
     private void HandleFloorCollision()
     {
         //Raycast a value
         RaycastHit hit;
 
+        //Force the player to be falling down based on the scale
+        //This foces the player to go downwards realistically like in real life
+        plrRigidbody.AddForce(Physics.gravity * gravityScale, ForceMode.Acceleration);
+
         //Create a boolean for where it is true if we are touching the ground
         //Raycast works as a look system, where it checks if it is touching something and makes sure where to look for it
-        isGrounded = Physics.Raycast(transform.position, -transform.up, out hit, rayCastSize);
-        if (!isGrounded)
-        {
-            //We fall faster like in real life
-            fallAcceleration += 5f;
-            plrRigidbody.AddForce(-transform.up * (fallSpd + fallAcceleration), ForceMode.Acceleration);
-        }
-        else
-            //Reset fall acceleration
-            fallAcceleration = 0f;
-        
+        isGrounded = Physics.Raycast(transform.position, -transform.up, out hit, rayCastSize);      
     }
 }
