@@ -11,6 +11,7 @@ public class PlayerLocomotion : MonoBehaviour
     Vector3 moveDir;
     Transform cameraObject;
     Rigidbody plrRigidbody;
+    float fallAcceleration = 0;
 
     //Set player values that will be used in game
     //This can be changed within the unity workspace to simplify where it is
@@ -18,11 +19,11 @@ public class PlayerLocomotion : MonoBehaviour
     [Header("Movement Speeds")]
     public float movementSpd = 7;
     public float rotationSpd = 15;
+    public float jumpSize = 10;
 
     [Header("Falling Based")]
-    public float inAirTimer;
-    public float leapingVelocity;
     public float fallSpd = 8;
+    public float rayCastSize = 1f;
     public LayerMask groundLayer;
 
     [Header("Flags")]
@@ -65,6 +66,14 @@ public class PlayerLocomotion : MonoBehaviour
         //at the object.
     }
 
+    private void HandleJump()
+    {
+        if (isGrounded)
+        {
+            plrRigidbody.AddForce(transform.up * jumpSize, ForceMode.Impulse);
+        }
+    }
+
     private void HandleRotation()
     {
         //Reset the direction because we are moving somewhere else
@@ -86,35 +95,34 @@ public class PlayerLocomotion : MonoBehaviour
         //Set the target rotation the player should look at
         Quaternion targetRotation = Quaternion.LookRotation(targetDir);
         Quaternion playerRotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpd * Time.deltaTime);
-
+        
         //Set player rotation
         transform.rotation = playerRotation;
-
+        
         //This script functions as where the player looks at. The player has a
         //box to show which directiont he player is currently looking at, making
         //it more realistic for where the player is facing.
     }
 
+    
+
     private void HandleFloorCollision()
     {
+        //Raycast a value
         RaycastHit hit;
-        Vector3 rayCastOrigin = transform.position;
 
+        //Create a boolean for where it is true if we are touching the ground
+        //Raycast works as a look system, where it checks if it is touching something and makes sure where to look for it
+        isGrounded = Physics.Raycast(transform.position, -transform.up, out hit, rayCastSize);
         if (!isGrounded)
         {
-            inAirTimer += Time.deltaTime;
-            plrRigidbody.AddForce(transform.forward * leapingVelocity);
-            plrRigidbody.AddForce(-Vector3.up * fallSpd * inAirTimer);
-        }
-
-        if (Physics.SphereCast(rayCastOrigin, 0.2f, -Vector3.up, out hit, groundLayer))
-        {
-            inAirTimer = 0;
-            isGrounded = true;
+            //We fall faster like in real life
+            fallAcceleration += 5f;
+            plrRigidbody.AddForce(-transform.up * (fallSpd + fallAcceleration), ForceMode.Acceleration);
         }
         else
-        {
-            isGrounded = false;
-        }
+            //Reset fall acceleration
+            fallAcceleration = 0f;
+        
     }
 }

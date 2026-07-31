@@ -353,12 +353,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   movementSpd: 7
   rotationSpd: 15
-  inAirTimer: 0
-  leapingVelocity: 0
-  fallSpd: -8
+  fallSpd: 100
+  rayCastSize: 0.95
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4294967295
   isGrounded: 0
 --- !u!54 &687788658
 Rigidbody:
