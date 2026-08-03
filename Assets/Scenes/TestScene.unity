@@ -435,11 +435,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 543c49497956c4d4b9f43aab072393a4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movementSpd: 7
+  currentAcceleration: 0
+  movementSpd: 10
   rotationSpd: 45
-  jumpSize: 12
+  acceleration: 30
+  deceleration: 30
+  jumpSize: 8
   gravityScale: 2
-  rayCastSize: 0.95
+  rayCastSize: 1.2
   groundLayer:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -455,7 +458,7 @@ Rigidbody:
   serializedVersion: 4
   m_Mass: 1
   m_Drag: 0
-  m_AngularDrag: 0.05
+  m_AngularDrag: 0
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -467,7 +470,7 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 112

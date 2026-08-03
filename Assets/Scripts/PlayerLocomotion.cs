@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.Callbacks;
 using UnityEngine;
 
 public class PlayerLocomotion : MonoBehaviour
@@ -9,6 +11,7 @@ public class PlayerLocomotion : MonoBehaviour
     //Create player values
     //These will be used to help keep track of what's happening to the player
     Vector3 moveDir;
+    public float currentAcceleration = 0f;
     Transform cameraObject;
     Rigidbody plrRigidbody;
 
@@ -18,6 +21,8 @@ public class PlayerLocomotion : MonoBehaviour
     [Header("Movement Speeds")]
     public float movementSpd = 7;
     public float rotationSpd = 15;
+    public float acceleration = 25f;
+    public float deceleration = 40f;
     public float jumpSize = 8;
 
     [Header("Falling Based")]
@@ -41,9 +46,9 @@ public class PlayerLocomotion : MonoBehaviour
     {
         //Handle EVERYTHING that's inside the player
         //This gets handled inside the player manager
+        HandleFloorCollision();
         HandleMovement();
         HandleRotation();
-        HandleFloorCollision();
         HandleJump(jumpInput);
     }
 
@@ -56,14 +61,23 @@ public class PlayerLocomotion : MonoBehaviour
         //Prevent the player from moving up
         moveDir.y = 0;
         //Move the player based on the set speed
-        moveDir = moveDir * movementSpd;
 
         //Set the player's velocity to the move direction
-        Vector3 movementVel = moveDir;
-        movementVel.y = plrRigidbody.velocity.y;
-        plrRigidbody.velocity = movementVel;
-    
-        //How this script works is it gets where the player is looking
+        Vector3 horizontalVel = new Vector3(plrRigidbody.velocity.x, 0, plrRigidbody.velocity.z);
+
+        //Check if the player's input is to a point where we can accelerate
+        //Otherwise, it should slow down
+        float accelRate = (moveDir * movementSpd).magnitude > 0.01f
+            ? acceleration //If Moving
+            : deceleration; //Otherwise
+
+        currentAcceleration = accelRate; //For Tracking Reasons
+        
+        //Smoothly move the player to the target
+        horizontalVel = Vector3.MoveTowards(horizontalVel, moveDir * movementSpd, accelRate * Time.fixedDeltaTime);
+        plrRigidbody.velocity = new Vector3(horizontalVel.x, plrRigidbody.velocity.y, horizontalVel.z);
+
+        //How this script works is it gets the player's direction
         //and moves the player's position based on where the camera looks
         //at the object.
     }
@@ -123,9 +137,9 @@ public class PlayerLocomotion : MonoBehaviour
         //Force the player to be falling down based on the scale
         //This foces the player to go downwards realistically like in real life
         plrRigidbody.AddForce(Physics.gravity * gravityScale, ForceMode.Acceleration);
-
+        
         //Create a boolean for where it is true if we are touching the ground
         //Raycast works as a look system, where it checks if it is touching something and makes sure where to look for it
-        isGrounded = Physics.Raycast(transform.position, -transform.up, out hit, rayCastSize);      
+        isGrounded = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out hit, rayCastSize);
     }
 }
