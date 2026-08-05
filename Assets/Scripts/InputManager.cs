@@ -10,6 +10,7 @@ public class InputManager : MonoBehaviour
     //All Stick/Input directions
     public Vector2 movementInput;
     public bool jumpInput;
+    public bool crouchInput;
     public float verticalInput;
     public float horizontalInput;
 

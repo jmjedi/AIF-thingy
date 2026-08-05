@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-//using System.Numerics; buzz off bro
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditor.Callbacks;
@@ -20,14 +19,10 @@ public class PlayerLocomotion : MonoBehaviour
 
     //Get Player Models
     public List<GameObject> modelList = new List<GameObject>();
-    public LayerMask layerMask;
 
     //Set player values that will be used in game
     //This can be changed within the unity workspace to simplify where it is
     //For example, I can make the speed faster by changing movementSpd;
-
-    //Non-public Variabes
-    float currentAcceleration = 0f;
 
     //Public Variables
     [Header("Movement Speeds")]
@@ -36,16 +31,18 @@ public class PlayerLocomotion : MonoBehaviour
     public float acceleration = 25f;
     public float deceleration = 40f;
     public float jumpSize = 8;
+    public float currentAcceleration = 0f; //DEBUG
     
     [Header("Falling Based")]
     public float gravityScale = 2;
     public float rayCastSize = 1f;
-    public LayerMask groundLayer;
 
     [Header("Flags & States")]
-    public bool isGrounded;
-    public bool canJump;
-    public string State = "Small";
+    public bool isGrounded; //DEBUG
+    public bool isTouchingRoof; //DEBUG
+    public bool canJump; //DEBUG
+    public bool isCrouch; //DEBUG
+    public string State = "S";
 
     private void Awake()
     {
@@ -56,22 +53,25 @@ public class PlayerLocomotion : MonoBehaviour
         cameraObject = Camera.main.transform;
     }
 
-    public void HandleAllMovement(bool jumpInput)
+    public void HandleAllMovement(bool jumpInput, bool crouchInput)
     {
         //Handle EVERYTHING that's inside the player
         //This gets handled inside the plzzayer manager
         HandleState();
-        HandleFloorCollision();
-        newFloorAlign();
+        HandleAllCollision();
         HandleMovement();
         HandleRotation();
-        HandleJump(jumpInput);
+        if (jumpInput)
+            HandleJump(jumpInput);
+        if (crouchInput)
+            HandleCrouch(crouchInput);
     }
 
     private void HandleState()
     {
-        
-        if (State == "S")
+        //Check if we are in the small state
+        //If so, we should have a smaller hitbox
+        if (State == "S" || isCrouch)
             hitbox.height = 1.214885f;
         else
             hitbox.height = 2.005388f;
@@ -82,6 +82,8 @@ public class PlayerLocomotion : MonoBehaviour
         //Make the character size visible based on what state the player is
         modelList[0].GetComponent<MeshRenderer>().enabled = (State == "S");
         modelList[1].GetComponent<MeshRenderer>().enabled = (State == "B");
+        modelList[2].GetComponent<MeshRenderer>().enabled = (State == "F");
+        modelList[3].GetComponent<MeshRenderer>().enabled = (State == "BS");
     }
     
     private void HandleMovement()
@@ -103,12 +105,12 @@ public class PlayerLocomotion : MonoBehaviour
             ? acceleration //If Moving
             : deceleration; //Otherwise
 
-        currentAcceleration = accelRate; //For Tracking Reasons
+        //currentAcceleration = accelRate; //For Tracking Reasons
         
         //Smoothly move the player to the target
         horizontalVel = Vector3.MoveTowards(horizontalVel, moveDir * movementSpd, accelRate * Time.fixedDeltaTime);
         plrRigidbody.velocity = new Vector3(horizontalVel.x, plrRigidbody.velocity.y, horizontalVel.z);
-
+        currentAcceleration = horizontalVel.x;
         //How this script works is it gets the player's direction
         //and moves the player's position based on where the camera looks
         //at the object.
@@ -120,25 +122,38 @@ public class PlayerLocomotion : MonoBehaviour
         if (isGrounded)
         {
         //Check if we are pressing the jump input
-            if (input)
+            if (input && !isTouchingRoof)
+            {
                 //Push the player upwards
                 if (State == "S")
                     plrRigidbody.AddForce(transform.up * (jumpSize / 3.2f), ForceMode.Impulse);
                 else
                     plrRigidbody.AddForce(transform.up * jumpSize, ForceMode.Impulse);
                 canJump = false;
+            }
         }
 
         //Check if we have only tapped the jump button
         if (!input && plrRigidbody.velocity.y > 0)
-        {
             //Bring player downwards
             plrRigidbody.velocity = new Vector3(plrRigidbody.velocity.x, plrRigidbody.velocity.y * 0.5f, plrRigidbody.velocity.z);
-        }
 
         //Check if we aren't holding the jump button, otherwise we can't jump
         if (!input && isGrounded)
             canJump = true;
+    }
+
+    private void HandleCrouch(bool crouchInput)
+    {
+        //We should only be able to crouch on the ground
+        if (isGrounded)
+        {
+            isCrouch = crouchInput;
+            if (crouchInput)
+            {
+                //Play Anim
+            }
+        }
     }
 
     private void HandleRotation()
@@ -149,13 +164,14 @@ public class PlayerLocomotion : MonoBehaviour
         //Check which direction the player is looking at
         targetDir = cameraObject.forward * inputManager.verticalInput;
         targetDir = targetDir + cameraObject.right * inputManager.horizontalInput;
+        targetDir.y = 0;
         targetDir.Normalize();
         //Prevent the player from looking up
-        targetDir.y = 0;
 
         //If we aren't moving, we should reset the player's direction
         //This helps keep track of where the player was originally looking
-        if (targetDir == Vector3.zero)
+        if (targetDir.sqrMagnitude < 0.001f)
+            //Keep player's original direction
             targetDir = transform.forward;
 
         //Set the target rotation the player should look at
@@ -170,10 +186,11 @@ public class PlayerLocomotion : MonoBehaviour
         //it more realistic for where the player is facing.
     }
 
-    private void HandleFloorCollision()
+    private void HandleAllCollision()
     {
         //Raycast a value
-        RaycastHit hit;
+        RaycastHit groundHit;
+        RaycastHit roofHit;
 
         //Force the player to be falling down based on the scale
         //This foces the player to go downwards realistically like in real life
@@ -181,17 +198,10 @@ public class PlayerLocomotion : MonoBehaviour
         
         //Create a boolean for where it is true if we are touching the ground
         //Raycast works as a look system, where it checks if it is touching something and makes sure where to look for it
-        isGrounded = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out hit, rayCastSize);
-    }
+        isGrounded = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out groundHit, rayCastSize);
 
-    private void newFloorAlign() //UNUSED
-    {
-        Ray ray = new Ray(transform.position, Vector3.down);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit, 0.1f, layerMask))
-            transform.up = Vector3.Slerp(transform.up, hit.normal, 0.8f);
-        else
-            transform.up = Vector3.up;
+        //Create a boolean for if we have hit a roof
+        //The raycast is point above the player so that it can properly see if we are seeing a roof or not
+        isTouchingRoof = Physics.Raycast(transform.position, Vector3.up, out roofHit, rayCastSize / 2);
     }
 }
