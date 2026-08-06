@@ -27,11 +27,15 @@ public class InputManager : MonoBehaviour
             //Otherwise, we should not be moving at this time
             //This can prevent the inputs from saving while we are playing
             playerControls.Gameplay.Movement.canceled += i => movementInput = Vector2.zero;
+
+            //Get all the player's buttons
             playerControls.Gameplay.Jump.started += i => jumpInput = true;
             playerControls.Gameplay.Jump.canceled += i => jumpInput = false;
+            playerControls.Gameplay.Secondary.started += i => crouchInput = true;
+            playerControls.Gameplay.Secondary.canceled += i => crouchInput = false;
 
         }
-        //Enalbe the player controls
+        //Enable the player controls
         playerControls.Enable();
     }
 

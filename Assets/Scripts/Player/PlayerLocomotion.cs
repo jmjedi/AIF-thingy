@@ -44,6 +44,11 @@ public class PlayerLocomotion : MonoBehaviour
     public bool isCrouch; //DEBUG
     public string State = "S";
 
+    [Header("DEBUG")]
+    public Vector3 normal = Vector3.up;
+    private Vector3 LastDir;
+    public float Angle;
+
     private void Awake()
     {
         //Grab all the components inside the player
@@ -57,14 +62,12 @@ public class PlayerLocomotion : MonoBehaviour
     {
         //Handle EVERYTHING that's inside the player
         //This gets handled inside the plzzayer manager
+        HandleAllCollision(); //ALWAYS at the top to prevent bugs
         HandleState();
-        HandleAllCollision();
         HandleMovement();
         HandleRotation();
-        if (jumpInput)
-            HandleJump(jumpInput);
-        if (crouchInput)
-            HandleCrouch(crouchInput);
+        HandleJump(jumpInput);
+        HandleCrouch(crouchInput);
     }
 
     private void HandleState()
@@ -104,8 +107,6 @@ public class PlayerLocomotion : MonoBehaviour
         float accelRate = (moveDir * movementSpd).magnitude > 0.01f
             ? acceleration //If Moving
             : deceleration; //Otherwise
-
-        //currentAcceleration = accelRate; //For Tracking Reasons
         
         //Smoothly move the player to the target
         horizontalVel = Vector3.MoveTowards(horizontalVel, moveDir * movementSpd, accelRate * Time.fixedDeltaTime);
@@ -124,6 +125,7 @@ public class PlayerLocomotion : MonoBehaviour
         //Check if we are pressing the jump input
             if (input && !isTouchingRoof)
             {
+                isCrouch = false;
                 //Push the player upwards
                 if (State == "S")
                     plrRigidbody.AddForce(transform.up * (jumpSize / 3.2f), ForceMode.Impulse);
@@ -148,11 +150,10 @@ public class PlayerLocomotion : MonoBehaviour
         //We should only be able to crouch on the ground
         if (isGrounded)
         {
-            isCrouch = crouchInput;
             if (crouchInput)
-            {
-                //Play Anim
-            }
+                isCrouch = true;
+            else
+                isCrouch = false;
         }
     }
 
@@ -170,16 +171,21 @@ public class PlayerLocomotion : MonoBehaviour
 
         //If we aren't moving, we should reset the player's direction
         //This helps keep track of where the player was originally looking
-        if (targetDir.sqrMagnitude < 0.001f)
+        if (targetDir.sqrMagnitude > 0.001f)
             //Keep player's original direction
-            targetDir = transform.forward;
+            LastDir = targetDir;
+        else
+            targetDir = LastDir;
 
         //Set the target rotation the player should look at
         Quaternion targetRotation = Quaternion.LookRotation(targetDir);
         Quaternion playerRotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpd * Time.deltaTime);
         
-        //Set player rotation
-        transform.rotation = playerRotation;
+        //Find the floor's current normal for the player to angle itself on
+        Vector3 currentNormal = Vector3.Slerp(Vector3.up, normal, 60f * Time.deltaTime);
+
+        //Set player rotation based on the normal
+        transform.rotation = Quaternion.FromToRotation(Vector3.up, currentNormal) * playerRotation;
         
         //This script functions as where the player looks at. The player has a
         //box to show which direction the player is currently looking at, making
@@ -199,6 +205,17 @@ public class PlayerLocomotion : MonoBehaviour
         //Create a boolean for where it is true if we are touching the ground
         //Raycast works as a look system, where it checks if it is touching something and makes sure where to look for it
         isGrounded = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out groundHit, rayCastSize);
+
+        if (isGrounded)
+        {
+            //Find the angle of the floor
+            //The normal is where the player finds the right gravity to move on
+            normal = groundHit.normal;
+            Angle = Vector3.Angle(groundHit.normal, Vector3.up);
+        }
+        else
+            //We are in the air
+            normal = Vector3.up;
 
         //Create a boolean for if we have hit a roof
         //The raycast is point above the player so that it can properly see if we are seeing a roof or not
