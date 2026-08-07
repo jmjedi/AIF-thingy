@@ -75,9 +75,9 @@ public class PlayerLocomotion : MonoBehaviour
         //Check if we are in the small state
         //If so, we should have a smaller hitbox
         if (State == "S" || isCrouch)
-            hitbox.height = 1.214885f;
+            hitbox.height = 1.214885f; //Small Hitbox
         else
-            hitbox.height = 2.005388f;
+            hitbox.height = 2.005388f; //Big Hitbox
         
         //Check if there is any models that are in the modelList
         //This is to prevent any errors that may occur if I have no models
@@ -109,7 +109,11 @@ public class PlayerLocomotion : MonoBehaviour
             : deceleration; //Otherwise
         
         //Smoothly move the player to the target
-        horizontalVel = Vector3.MoveTowards(horizontalVel, moveDir * movementSpd, accelRate * Time.fixedDeltaTime);
+        if (isCrouch)
+            horizontalVel = Vector3.MoveTowards(horizontalVel / 1.2f, moveDir * movementSpd, (accelRate / 1.1f) * Time.fixedDeltaTime);
+        else
+            horizontalVel = Vector3.MoveTowards(horizontalVel, moveDir * movementSpd, accelRate * Time.fixedDeltaTime);
+
         plrRigidbody.velocity = new Vector3(horizontalVel.x, plrRigidbody.velocity.y, horizontalVel.z);
         currentAcceleration = horizontalVel.x;
         //How this script works is it gets the player's direction
@@ -126,8 +130,9 @@ public class PlayerLocomotion : MonoBehaviour
             if (input && !isTouchingRoof)
             {
                 isCrouch = false;
+                normal = Vector3.up;
                 //Push the player upwards
-                if (State == "S")
+                if (State == "S" || isCrouch)
                     plrRigidbody.AddForce(transform.up * (jumpSize / 3.2f), ForceMode.Impulse);
                 else
                     plrRigidbody.AddForce(transform.up * jumpSize, ForceMode.Impulse);
@@ -197,10 +202,6 @@ public class PlayerLocomotion : MonoBehaviour
         //Raycast a value
         RaycastHit groundHit;
         RaycastHit roofHit;
-
-        //Force the player to be falling down based on the scale
-        //This foces the player to go downwards realistically like in real life
-        plrRigidbody.AddForce(Physics.gravity * gravityScale, ForceMode.Acceleration);
         
         //Create a boolean for where it is true if we are touching the ground
         //Raycast works as a look system, where it checks if it is touching something and makes sure where to look for it
@@ -219,6 +220,10 @@ public class PlayerLocomotion : MonoBehaviour
 
         //Create a boolean for if we have hit a roof
         //The raycast is point above the player so that it can properly see if we are seeing a roof or not
-        isTouchingRoof = Physics.Raycast(transform.position, Vector3.up, out roofHit, rayCastSize / 2);
+        isTouchingRoof = Physics.Raycast(transform.position, Vector3.up, out roofHit, rayCastSize / 1.8f);
+
+        //Force the player to be falling down based on the scale
+        //This foces the player to go downwards realistically like in real life
+        plrRigidbody.AddForce(Physics.gravity * gravityScale, ForceMode.Acceleration);
     }
 }
