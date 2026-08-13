@@ -24,6 +24,9 @@ public class PlayerLocomotion : MonoBehaviour
     //This can be changed within the unity workspace to simplify where it is
     //For example, I can make the speed faster by changing movementSpd;
 
+    //Non-public Variables
+    public float rings = 0;
+
     //Public Variables
     [Header("Movement Speeds")]
     public float movementSpd = 7;
@@ -68,6 +71,8 @@ public class PlayerLocomotion : MonoBehaviour
         HandleRotation();
         HandleJump(jumpInput);
         HandleCrouch(crouchInput);
+        Actions.OnRingCollect += IncreaseRings;
+
     }
 
     private void HandleState()
@@ -225,5 +230,10 @@ public class PlayerLocomotion : MonoBehaviour
         //Force the player to be falling down based on the scale
         //This foces the player to go downwards realistically like in real life
         plrRigidbody.AddForce(Physics.gravity * gravityScale, ForceMode.Acceleration);
+    }
+
+    public void IncreaseRings(float amount)
+    {
+        rings += amount;
     }
 }

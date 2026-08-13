@@ -52,18 +52,52 @@ public class PlayerInterface : MonoBehaviour
         score.text = string.Format("{0}{1}{2}{3}{4}{5}{6}{7}{8}", 1, 2, 3, 4, 5, 6, 7, 8, 9);
     }
 
-    private void CalculateChips()
+    private void CalculateChips(float value)
     {
         //Calculate how much chips we have
         //NUMBERS ARE TEMPOARY
-        chips.text = "Chips: " + string.Format("{0}{1}{2}", 0, 0, 0);
+        int hundreds = 0;
+        int tens = 0;
+        int ones = 0;
+
+        char firstChar = (char)hundreds;
+        char secondChar = (char)tens;
+        char thirdChar = (char)ones;
+
+        float absFloat = Mathf.Abs(value);
+        if (value >= 100)
+        {
+            firstChar = absFloat.ToString()[0];
+            secondChar = absFloat.ToString()[1];
+            thirdChar = absFloat.ToString()[2];
+        }
+        else if (value >= 10)
+        {
+            secondChar = absFloat.ToString()[0];
+            thirdChar = absFloat.ToString()[1];
+        }
+        else
+        {
+            thirdChar = absFloat.ToString()[0];
+        }
+
+        ones = (int)char.GetNumericValue(thirdChar);
+        tens = (int)char.GetNumericValue(secondChar);
+        hundreds = (int)char.GetNumericValue(firstChar);
+
+        chips.text = "Chips: " + string.Format("{0}{1}{2}", hundreds, tens, ones);
     }
 
-    private void Update()
+    private void Start()
     {
         //Update all the text functions and calculations
         CalculateTimer();
         CalculateScore();
-        CalculateChips();
+        CalculateChips(0);
+    }
+    private void Update()
+    {
+        Actions.OnRingCollect += CalculateChips;
+        CalculateTimer();
     }
 }
