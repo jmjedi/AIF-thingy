@@ -12,6 +12,8 @@ public class PlayerInterface : MonoBehaviour
     float minutes = 5;
     float seconds = 0;
     float miliseconds = 0;
+
+    int currentChips = 0;
     
     private void CalculateTimer()
     {
@@ -84,7 +86,7 @@ public class PlayerInterface : MonoBehaviour
         ones = (int)char.GetNumericValue(thirdChar);
         tens = (int)char.GetNumericValue(secondChar);
         hundreds = (int)char.GetNumericValue(firstChar);
-
+        print(hundreds);
         chips.text = "Chips: " + string.Format("{0}{1}{2}", hundreds, tens, ones);
     }
 
@@ -94,10 +96,17 @@ public class PlayerInterface : MonoBehaviour
         CalculateTimer();
         CalculateScore();
         CalculateChips(0);
+        Actions.OnRingCollect += UpdateChips;
     }
+
+    private void UpdateChips(float value)
+    {
+        currentChips += (int)value;
+    }
+
     private void Update()
     {
-        Actions.OnRingCollect += CalculateChips;
         CalculateTimer();
+        CalculateChips(currentChips);
     }
 }

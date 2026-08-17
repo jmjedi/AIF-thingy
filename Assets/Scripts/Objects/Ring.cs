@@ -25,7 +25,7 @@ public class Ring : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             //Send out the event
-            Actions.OnRingCollect(1);
+            Actions.OnRingCollect?.Invoke(1);
             Destroy(gameObject); //Destroy's itself
         }
     }
